@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "fileforge": {
+      "command": "node",
+      "args": ["C:/mcp-servers/FileForge/src/fileforge.cjs"],
+      "timeout": 30,
+      "env": {
+        "DEBUG": "1",
+        "NODE_ENV": "production"
+      }
+    }
+  }
+} 

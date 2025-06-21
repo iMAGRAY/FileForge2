@@ -1,0 +1,66 @@
+{
+  "name": "fileforge",
+  "version": "3.2.0",
+  "description": "🔥 FileForge - The ultimate file and code forge! Revolutionary MCP server with optimized performance and vector embeddings",
+  "main": "src/fileforge.cjs",
+  "keywords": [
+    "fileforge",
+    "mcp",
+    "model-context-protocol",
+    "code-forge",
+    "file-operations",
+    "vector-embeddings",
+    "optimized-performance",
+    "cursor",
+    "claude",
+    "ai-tools",
+    "code-smithing"
+  ],
+  "author": "FileForge Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iMAGRAY/FileForge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/iMAGRAY/FileForge/issues"
+  },
+  "homepage": "https://github.com/iMAGRAY/FileForge#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node src/fileforge.cjs",
+    "mcp": "node src/fileforge.cjs",
+    "test": "jest --passWithNoTests",
+    "build": "make",
+    "build:win": "build_vs.bat",
+    "benchmark": "python src/benchmark_assembler.py",
+    "lint": "eslint src/**/*.{js,cjs} || exit 0",
+    "docs": "jsdoc src/**/*.js -d docs/api || exit 0",
+    "postinstall": "echo 'FileForge installed successfully! Use: npm run mcp'"
+  },
+  "bin": {
+    "fileforge": "./src/fileforge.cjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "eslint": "^8.0.0",
+    "jsdoc": "^4.0.0"
+  },
+  "files": [
+    "src/",
+    "docs/",
+    "examples/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "INSTALL.md",
+    "requirements.txt",
+    "Makefile",
+    "build_vs.bat"
+  ]
+}

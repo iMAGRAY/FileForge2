@@ -1,0 +1,213 @@
+{
+  "_comment": "Ultra Code Manager Enhanced - MCP Configuration Examples",
+  "_version": "3.2.0",
+  "_documentation": "https://github.com/your-username/ultra-code-manager-enhanced",
+
+  "cursor_mcp_config": {
+    "_description": "Configuration for Cursor IDE",
+    "_location": "~/.cursor/mcp.json or C:/Users/USERNAME/AppData/Roaming/Cursor/User/mcp.json",
+    "mcpServers": {
+      "ultra-code-manager": {
+        "command": "node",
+        "args": ["C:/path/to/ultra-code-manager-enhanced/src/ultra_code_manager_enhanced.cjs"],
+        "timeout": 30,
+        "env": {
+          "DEBUG": "1",
+          "EMBEDDINGS_DIR": "C:/path/to/embeddings",
+          "PYTHONPATH": "C:/path/to/ultra-code-manager-enhanced"
+        }
+      }
+    }
+  },
+
+  "claude_desktop_config": {
+    "_description": "Configuration for Claude Desktop",
+    "_location": "~/.claude/claude_desktop_config.json",
+    "mcpServers": {
+      "ultra-code-manager": {
+        "command": "node",
+        "args": ["/path/to/ultra-code-manager-enhanced/src/ultra_code_manager_enhanced.cjs"],
+        "timeout": 30,
+        "env": {
+          "EMBEDDINGS_DIR": "/path/to/embeddings"
+        }
+      }
+    }
+  },
+
+  "development_config": {
+    "_description": "Development configuration with debug enabled",
+    "mcpServers": {
+      "ultra-code-manager-dev": {
+        "command": "node",
+        "args": ["./src/ultra_code_manager_enhanced.cjs"],
+        "timeout": 60,
+        "env": {
+          "DEBUG": "1",
+          "MCP_LOG_LEVEL": "debug",
+          "NODE_ENV": "development"
+        }
+      }
+    }
+  },
+
+  "production_config": {
+    "_description": "Production configuration optimized for performance",
+    "mcpServers": {
+      "ultra-code-manager-prod": {
+        "command": "node",
+        "args": ["./src/ultra_code_manager_enhanced.cjs"],
+        "timeout": 30,
+        "env": {
+          "NODE_ENV": "production",
+          "EMBEDDINGS_DIR": "/opt/embeddings",
+          "ASSEMBLER_BUFFER_SIZE": "16384"
+        }
+      }
+    }
+  },
+
+  "multi_instance_config": {
+    "_description": "Multiple Ultra Code Manager instances for different projects",
+    "mcpServers": {
+      "ultra-code-manager-main": {
+        "command": "node",
+        "args": ["/path/to/ultra-code-manager-enhanced/src/ultra_code_manager_enhanced.cjs"],
+        "timeout": 30,
+        "env": {
+          "EMBEDDINGS_DIR": "/projects/main/embeddings"
+        }
+      },
+      "ultra-code-manager-research": {
+        "command": "node", 
+        "args": ["/path/to/ultra-code-manager-enhanced/src/ultra_code_manager_enhanced.cjs"],
+        "timeout": 45,
+        "env": {
+          "EMBEDDINGS_DIR": "/projects/research/embeddings",
+          "DEBUG": "1"
+        }
+      }
+    }
+  },
+
+  "docker_config": {
+    "_description": "Configuration for Docker deployment",
+    "mcpServers": {
+      "ultra-code-manager-docker": {
+        "command": "docker",
+        "args": [
+          "run", "--rm", "-i",
+          "-v", "/host/project:/workspace",
+          "-v", "/host/embeddings:/embeddings", 
+          "ultra-code-manager:latest",
+          "node", "/app/src/ultra_code_manager_enhanced.cjs"
+        ],
+        "timeout": 60,
+        "env": {
+          "EMBEDDINGS_DIR": "/embeddings"
+        }
+      }
+    }
+  },
+
+  "windows_specific_config": {
+    "_description": "Windows-specific paths and settings",
+    "mcpServers": {
+      "ultra-code-manager": {
+        "command": "node",
+        "args": ["C:\\mcp-servers\\ultra-code-manager-enhanced\\src\\ultra_code_manager_enhanced.cjs"],
+        "timeout": 30,
+        "env": {
+          "EMBEDDINGS_DIR": "C:\\ProgramData\\UltraCodeManager\\embeddings",
+          "TEMP": "C:\\temp\\ucm",
+          "PATH": "C:\\Program Files\\nodejs;C:\\Python39;%PATH%"
+        }
+      }
+    }
+  },
+
+  "linux_macos_config": {
+    "_description": "Linux/macOS specific configuration",
+    "mcpServers": {
+      "ultra-code-manager": {
+        "command": "node",
+        "args": ["/opt/ultra-code-manager-enhanced/src/ultra_code_manager_enhanced.cjs"],
+        "timeout": 30,
+        "env": {
+          "EMBEDDINGS_DIR": "/var/lib/ultra-code-manager/embeddings",
+          "TMPDIR": "/tmp/ucm",
+          "PATH": "/usr/local/bin:/usr/bin:/bin:$PATH"
+        }
+      }
+    }
+  },
+
+  "performance_optimized_config": {
+    "_description": "Maximum performance configuration",
+    "mcpServers": {
+      "ultra-code-manager-perf": {
+        "command": "node",
+        "args": [
+          "--max-old-space-size=4096",
+          "--optimize-for-size",
+          "./src/ultra_code_manager_enhanced.cjs"
+        ],
+        "timeout": 30,
+        "env": {
+          "NODE_ENV": "production",
+          "UV_THREADPOOL_SIZE": "16",
+          "ASSEMBLER_BUFFER_SIZE": "32768",
+          "EMBEDDINGS_BATCH_SIZE": "64"
+        }
+      }
+    }
+  },
+
+  "minimal_config": {
+    "_description": "Minimal configuration for basic usage",
+    "mcpServers": {
+      "ultra-code-manager": {
+        "command": "node",
+        "args": ["./src/ultra_code_manager_enhanced.cjs"],
+        "timeout": 30
+      }
+    }
+  },
+
+  "gpu_accelerated_config": {
+    "_description": "Configuration with GPU acceleration for embeddings",
+    "mcpServers": {
+      "ultra-code-manager-gpu": {
+        "command": "node",
+        "args": ["./src/ultra_code_manager_enhanced.cjs"],
+        "timeout": 30,
+        "env": {
+          "CUDA_VISIBLE_DEVICES": "0",
+          "TRANSFORMERS_CACHE": "/fast/ssd/cache",
+          "PYTORCH_CUDA_ALLOC_CONF": "max_split_size_mb:512"
+        }
+      }
+    }
+  },
+
+  "troubleshooting_config": {
+    "_description": "Configuration for debugging and troubleshooting",
+    "mcpServers": {
+      "ultra-code-manager-debug": {
+        "command": "node",
+        "args": [
+          "--inspect=127.0.0.1:9229",
+          "--trace-warnings",
+          "./src/ultra_code_manager_enhanced.cjs"
+        ],
+        "timeout": 120,
+        "env": {
+          "DEBUG": "1",
+          "MCP_LOG_LEVEL": "trace",
+          "NODE_DEBUG": "mcp,fs,util",
+          "VERBOSE": "1"
+        }
+      }
+    }
+  }
+}

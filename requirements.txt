@@ -1,0 +1,46 @@
+# Requirements for Ultra Code Manager Enhanced - Embedding System
+# All dependencies with fixed versions for stability
+
+# Core libraries for embeddings
+sentence-transformers==2.2.2
+faiss-cpu==1.7.4
+numpy==1.24.3
+torch>=2.0.1,<2.1.0
+transformers==4.33.2
+
+# Additional utilities
+scikit-learn==1.3.0
+pandas==2.0.3
+tqdm==4.66.1
+
+# JSON processing (if additional functionality is needed)
+ujson==5.8.0
+
+# Logging and monitoring
+psutil==5.9.5
+
+# Optional dependencies for extended functionality
+# For working with various file formats
+chardet==5.1.0
+python-magic==0.4.27; platform_system != "Windows"
+python-magic-bin==0.4.14; platform_system == "Windows"
+
+# For web interface (optional)
+flask==2.3.3
+flask-cors==4.0.0
+
+# For embedding visualization (optional)
+matplotlib==3.7.2
+seaborn==0.12.2
+plotly==5.15.0
+
+# Computation acceleration
+numba==0.57.1
+
+# Testing dependencies
+pytest==7.4.0
+pytest-cov==4.1.0
+
+# CUDA support (optional, uncomment if GPU available)
+# torch==2.0.1+cu118 -f https://download.pytorch.org/whl/torch_stable.html
+# faiss-gpu==1.7.4 

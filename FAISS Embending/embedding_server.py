@@ -247,6 +247,9 @@ class EmbeddingServer:
         # Инициализация индексов
         await self._initialize_indexes()
 
+        # Первичная индексация репозитория
+        await self.index_repository(self.repo_path)
+
         # Запуск наблюдателя за репозиторием
         if self.repo_path.exists():
             from .repo_watcher import RepositoryWatcher
@@ -325,8 +328,33 @@ class EmbeddingServer:
         
         # Метаданные для документов
         self.indexes['metadata'] = []
-        
+
         logger.info("✅ FAISS индекс инициализирован")
+
+    async def index_repository(self, repo_path: Path):
+        """Полная индексация репозитория."""
+        if not repo_path.exists():
+            logger.warning(f"⚠️ Репозиторий не найден: {repo_path}")
+            return
+
+        logger.info(f"📂 Индексация репозитория {repo_path}...")
+
+        for file_path in repo_path.rglob('*'):
+            if not file_path.is_file():
+                continue
+
+            try:
+                from .chunker import chunk_file
+                chunks = chunk_file(str(file_path))
+                if not chunks:
+                    continue
+                rel = os.path.relpath(file_path, repo_path)
+                meta = [{"path": rel, "chunk_id": i} for i in range(len(chunks))]
+                await self.add_to_index(chunks, meta)
+            except Exception as e:
+                logger.warning(f"⚠️ Ошибка индексации {file_path}: {e}")
+
+        logger.info("✅ Репозиторий проиндексирован")
 
     def _print_memory_usage(self):
         """Вывод информации об использовании памяти"""

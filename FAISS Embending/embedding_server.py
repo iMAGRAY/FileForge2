@@ -201,13 +201,15 @@ class EmbeddingServer:
         self.model_paths = {
             'embedding': config.get('embedding_model_path', './models/Qwen3-Embedding-8B-Q6_K.gguf'),
             'reranker': config.get('reranker_model_path', './models/Qwen3-Reranker-8B-Q6_K.gguf'),
+            'coder': config.get('coder_model_path', './models/Qwen2.5-Coder-7B-Instruct.Q6_K.gguf'),
             'llm': config.get('llm_model_path', './models/Magistral-Small-2506-UD-Q4_K_XL.gguf')
         }
         
         # Порты для разных сервисов
         self.ports = {
             'embedding': 8080,
-            'llm': 8081
+            'coder': 8081,
+            'llm': 8082
         }
         
         # Конфигурация GPU
@@ -262,7 +264,19 @@ class EmbeddingServer:
         else:
             logger.warning(f"⚠️ Модель эмбеддингов не найдена: {self.model_paths['embedding']}")
         
-        # LLM сервер
+        # Coder сервер (Qwen2.5)
+        if os.path.exists(self.model_paths['coder']):
+            logger.info(f"📥 Запуск Qwen2.5-Coder-7B сервера")
+            self.llama_processes['coder'] = LlamaCppInterface(
+                self.llama_cpp_path,
+                self.model_paths['coder'],
+                self.gpu_layers
+            )
+            await self.llama_processes['coder'].start_server(self.ports['coder'])
+        else:
+            logger.warning(f"⚠️ Coder модель не найдена: {self.model_paths['coder']}")
+
+        # LLM сервер (Magistral)
         if os.path.exists(self.model_paths['llm']):
             logger.info(f"📥 Запуск Magistral-Small-2506 сервера")
             self.llama_processes['llm'] = LlamaCppInterface(
@@ -446,38 +460,53 @@ class EmbeddingServer:
         Returns:
             Словарь с ответом и метаданными
         """
-        if 'llm' not in self.llama_processes:
-            raise ValueError("LLM сервер не запущен")
+        if 'coder' not in self.llama_processes and 'llm' not in self.llama_processes:
+            raise ValueError("LLM сервера не запущены")
             
         start_time = time.time()
         
         try:
-            # Генерация ответа через llama.cpp HTTP API
-            response = await self.llama_processes['llm'].generate_completion(
-                prompt,
-                port=self.ports['llm'],
-                max_tokens=max_tokens,
-                temperature=temperature
-            )
-            
+            # Генерация ответа от всех доступных моделей
+            results = []
+            for name in ['coder', 'llm']:
+                if name in self.llama_processes:
+                    resp = await self.llama_processes[name].generate_completion(
+                        prompt,
+                        port=self.ports[name],
+                        max_tokens=max_tokens,
+                        temperature=temperature
+                    )
+                    results.append((name, resp.get('content', '').strip()))
+
             generation_time = time.time() - start_time
-            
-            # Подсчет токенов (приблизительно)
+
+            # Если доступен ре-ранкер и есть несколько результатов - выбираем лучший
+            if self.models.get('reranker') and len(results) > 1:
+                texts = [r[1] for r in results]
+                ranked = await self.rerank_documents(prompt, texts, top_k=1)
+                best_index = ranked[0]['corpus_id'] if ranked else 0
+            else:
+                best_index = 0
+
+            best_name, best_text = results[best_index]
+
             prompt_tokens = len(prompt.split())
-            completion_tokens = len(response.get('content', '').split())
-            
+            completion_tokens = len(best_text.split())
+
             result = {
-                'response': response.get('content', '').strip(),
+                'response': best_text,
                 'prompt_tokens': prompt_tokens,
                 'completion_tokens': completion_tokens,
                 'total_tokens': prompt_tokens + completion_tokens,
                 'generation_time': generation_time,
                 'tokens_per_second': completion_tokens / generation_time if generation_time > 0 else 0,
-                'model': 'Magistral-Small-2506-UD-Q4_K_XL'
+                'model': best_name
             }
-            
-            logger.info(f"💬 Ответ сгенерирован: {result['tokens_per_second']:.1f} tok/s")
-            
+
+            logger.info(
+                f"💬 Ответ сгенерирован {best_name}: {result['tokens_per_second']:.1f} tok/s"
+            )
+
             return result
             
         except Exception as e:
@@ -571,6 +600,7 @@ class EmbeddingServer:
             'models_loaded': {
                 'embedding': 'embedding' in self.llama_processes,
                 'reranker': 'reranker' in self.models,
+                'coder': 'coder' in self.llama_processes,
                 'llm': 'llm' in self.llama_processes
             },
             'index_size': self.indexes.get('faiss', {}).ntotal if 'faiss' in self.indexes else 0,
@@ -633,7 +663,8 @@ async def startup_event():
     config = {
         'llama_cpp_path': './llama_build/llama.cpp/build/bin/Release/llama-server.exe',
         'embedding_model_path': './models/Qwen3-Embedding-8B-Q6_K.gguf',
-        'reranker_model_path': './models/Qwen3-Reranker-8B-Q6_K.gguf', 
+        'reranker_model_path': './models/Qwen3-Reranker-8B-Q6_K.gguf',
+        'coder_model_path': './models/Qwen2.5-Coder-7B-Instruct.Q6_K.gguf',
         'llm_model_path': './models/Magistral-Small-2506-UD-Q4_K_XL.gguf',
         'cache_dir': './cache',
         'gpu_layers': 35,  # Для RTX 4070
@@ -817,7 +848,8 @@ async def root():
 DEFAULT_CONFIG = {
     'llama_cpp_path': './llama_build/llama.cpp/build/bin/Release/llama-server.exe',
     'embedding_model_path': './models/Qwen3-Embedding-8B-Q6_K.gguf',
-    'reranker_model_path': './models/Qwen3-Reranker-8B-Q6_K.gguf', 
+    'reranker_model_path': './models/Qwen3-Reranker-8B-Q6_K.gguf',
+    'coder_model_path': './models/Qwen2.5-Coder-7B-Instruct.Q6_K.gguf',
     'llm_model_path': './models/Magistral-Small-2506-UD-Q4_K_XL.gguf',
     'cache_dir': './cache',
     'gpu_layers': 35,  # Для RTX 4070
@@ -832,6 +864,7 @@ async def main():
     print("💎 Модели:")
     print("  • Qwen3-Embedding-8B Q6_K (4.9 GB VRAM, ~10M vectors/s)")
     print("  • Qwen3-Reranker-8B Q6_K (6 GB VRAM, ~400 pairs/s)")
+    print("  • Qwen2.5-Coder-7B-Instruct Q6_K (7 GB VRAM, ~35 tok/s)")
     print("  • Magistral-Small-2506-UD-Q4_K_XL (14 GB VRAM, 6-8 tok/s)")
     print("🔍 Индексы: FAISS-HNSW + Tantivy-BM25")
     print("🔧 Движок: llama.cpp (нативный)")
@@ -891,13 +924,14 @@ async def main():
     finally:
         await server.shutdown()
 
+
 def start_server():
     """Запуск HTTP сервера"""
     try:
-    print("🚀 Запуск Cursor Compatible Embedding Server...")
-    print("🌐 Адрес: http://127.0.0.1:11435")
-    print("📖 Документация: http://127.0.0.1:11435/docs")
-    print("💡 Для остановки нажмите Ctrl+C")
+        print("🚀 Запуск Cursor Compatible Embedding Server...")
+        print("🌐 Адрес: http://127.0.0.1:11435")
+        print("📖 Документация: http://127.0.0.1:11435/docs")
+        print("💡 Для остановки нажмите Ctrl+C")
     except UnicodeEncodeError:
         # Fallback для Windows консоли
         print("* Запуск Cursor Compatible Embedding Server...")

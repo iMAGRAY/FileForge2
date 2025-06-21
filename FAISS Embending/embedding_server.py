@@ -219,6 +219,10 @@ class EmbeddingServer:
         # Кэш директории
         self.cache_dir = Path(config.get('cache_dir', './cache'))
         self.cache_dir.mkdir(exist_ok=True)
+
+        # Путь к репозиторию для индексирования
+        self.repo_path = Path(config.get('repo_path', '.')).resolve()
+        self.watcher = None
         
         logger.info(f"🚀 Инициализация Embedding Server для {self.device}")
         logger.info(f"💾 Кэш директория: {self.cache_dir}")
@@ -242,7 +246,15 @@ class EmbeddingServer:
         
         # Инициализация индексов
         await self._initialize_indexes()
-        
+
+        # Запуск наблюдателя за репозиторием
+        if self.repo_path.exists():
+            from .repo_watcher import RepositoryWatcher
+            self.watcher = RepositoryWatcher(self, self.repo_path)
+            self.watcher.start()
+        else:
+            logger.warning(f"⚠️ Репозиторий не найден: {self.repo_path}")
+
         logger.info("✅ Все модели загружены успешно!")
         self._print_memory_usage()
 
@@ -628,7 +640,10 @@ class EmbeddingServer:
         for name, process in self.llama_processes.items():
             logger.info(f"🛑 Остановка {name} сервера...")
             await process.stop_server()
-        
+
+        if self.watcher:
+            await self.watcher.stop()
+
         logger.info("✅ Все серверы остановлены")
 
 # === FASTAPI HTTP СЕРВЕР ===
@@ -667,6 +682,7 @@ async def startup_event():
         'coder_model_path': './models/Qwen2.5-Coder-7B-Instruct.Q6_K.gguf',
         'llm_model_path': './models/Magistral-Small-2506-UD-Q4_K_XL.gguf',
         'cache_dir': './cache',
+        'repo_path': '.',
         'gpu_layers': 35,  # Для RTX 4070
     }
     
@@ -826,6 +842,26 @@ async def list_models_simple():
     """Упрощенный endpoint для списка моделей"""
     return await list_models()
 
+
+@app.post("/search")
+async def search_code(query: str, top_k: int = 5):
+    """Поиск по индексу репозитория"""
+    global embedding_server
+    if not embedding_server:
+        raise HTTPException(status_code=503, detail="Server not ready")
+    results = await embedding_server.search_index(query, top_k)
+    return {"results": results}
+
+
+@app.post("/generate")
+async def generate(prompt: str, max_tokens: int = 256, temperature: float = 0.7):
+    """Генерация ответа с помощью LLM"""
+    global embedding_server
+    if not embedding_server:
+        raise HTTPException(status_code=503, detail="Server not ready")
+    result = await embedding_server.generate_response(prompt, max_tokens, temperature)
+    return result
+
 @app.get("/")
 async def root():
     """Корневой endpoint с информацией о сервере"""
@@ -838,6 +874,8 @@ async def root():
             "models": ["/v1/models", "/api/models", "/models"],
             "health": "/health",
             "stats": "/stats",
+            "search": "/search",
+            "generate": "/generate",
             "docs": "/docs"
         },
         "port": 11435,
@@ -852,6 +890,7 @@ DEFAULT_CONFIG = {
     'coder_model_path': './models/Qwen2.5-Coder-7B-Instruct.Q6_K.gguf',
     'llm_model_path': './models/Magistral-Small-2506-UD-Q4_K_XL.gguf',
     'cache_dir': './cache',
+    'repo_path': '.',
     'gpu_layers': 35,  # Для RTX 4070
     'host': '127.0.0.1',
     'port': 11435  # Cursor совместимый порт
